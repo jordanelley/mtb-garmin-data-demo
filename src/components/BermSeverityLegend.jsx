@@ -1,12 +1,10 @@
-import { BERM_SEVERITY } from '../lib/track.js'
-import { STATUS } from '../lib/colors.js'
+import { BERM_GRADES } from '../lib/grade.js'
 import EstimateBadge from './EstimateBadge.jsx'
 
-const RANGES = {
-  good: '< 12°',
-  warning: '12–20°',
-  serious: '20–30°',
-  critical: '30°+',
+function rangeLabel(grades, i) {
+  const prevMax = i === 0 ? 0 : grades[i - 1].maxDeg
+  const g = grades[i]
+  return g.maxDeg === Infinity ? `${prevMax}°+` : `${prevMax}–${g.maxDeg}°`
 }
 
 export default function BermSeverityLegend() {
@@ -16,11 +14,11 @@ export default function BermSeverityLegend() {
         Estimated berm bank angle <EstimateBadge title="Derived from GPS-estimated turn radius and speed, not measured. See the formula note below." />
       </div>
       <div className="severity-swatches">
-        {Object.values(BERM_SEVERITY).map((s) => (
-          <div className="severity-swatch" key={s.key}>
-            <span className="swatch-dot" style={{ background: STATUS[s.key] }} />
+        {BERM_GRADES.map((g, i) => (
+          <div className="severity-swatch" key={g.grade}>
+            <span className="swatch-dot" style={{ background: g.color }} />
             <span>
-              {s.label} ({RANGES[s.key]})
+              {g.label} ({rangeLabel(BERM_GRADES, i)})
             </span>
           </div>
         ))}

@@ -3,13 +3,13 @@ import './App.css'
 import TrackList from './components/TrackList.jsx'
 import TrackMap from './components/TrackMap.jsx'
 import ElevationProfile from './components/ElevationProfile.jsx'
-import GradientLegend from './components/GradientLegend.jsx'
 import BermSeverityLegend from './components/BermSeverityLegend.jsx'
 import BermTable from './components/BermTable.jsx'
 import DataTable from './components/DataTable.jsx'
 import { parseGpx } from './lib/gpx.js'
 import { buildTrackModel } from './lib/track.js'
 import { usePrefersDark } from './lib/usePrefersDark.js'
+import { classifyTrailGrade, DIRECTIONS } from './lib/grade.js'
 
 function formatDistance(m) {
   return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m.toFixed(0)} m`
@@ -28,6 +28,10 @@ export default function App() {
   const [trackError, setTrackError] = useState(null)
 
   const [highlightedBermIdx, setHighlightedBermIdx] = useState(null)
+  const [directionByFile, setDirectionByFile] = useState({})
+
+  const [uploads, setUploads] = useState([])
+  const [uploadError, setUploadError] = useState(null)
 
   const refreshList = useCallback(async () => {
     setListLoading(true)
@@ -67,9 +71,69 @@ export default function App() {
     }
   }, [])
 
+  const selectUpload = useCallback(
+    (id) => {
+      const entry = uploads.find((u) => u.id === id)
+      if (!entry) return
+      setSelectedFile(`upload:${id}`)
+      setTrack(entry.track)
+      setTrackError(null)
+      setTrackLoading(false)
+      setHighlightedBermIdx(null)
+    },
+    [uploads],
+  )
+
+  const handleUploadFiles = useCallback(async (fileList) => {
+    setUploadError(null)
+    const errors = []
+    const parsed = []
+    for (const file of Array.from(fileList)) {
+      try {
+        const text = await file.text()
+        const { name, points } = parseGpx(text)
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+        parsed.push({ id, name: file.name, size: file.size, track: buildTrackModel(file.name, name, points) })
+      } catch (err) {
+        errors.push(`${file.name}: ${err.message}`)
+      }
+    }
+    if (parsed.length) setUploads((prev) => [...prev, ...parsed])
+    if (errors.length) setUploadError(errors.join('; '))
+  }, [])
+
+  const removeUpload = useCallback(
+    (id) => {
+      setUploads((prev) => prev.filter((u) => u.id !== id))
+      if (selectedFile === `upload:${id}`) {
+        setSelectedFile(null)
+        setTrack(null)
+      }
+    },
+    [selectedFile],
+  )
+
+  const direction = (selectedFile && directionByFile[selectedFile]) || DIRECTIONS.twoWay.key
+  const gradeResult = track ? classifyTrailGrade(track, direction) : null
+
+  const selectedUploadId = selectedFile?.startsWith('upload:') ? selectedFile.slice('upload:'.length) : null
+  const selectedServerFile = selectedUploadId ? null : selectedFile
+
   return (
     <div className="app">
-      <TrackList files={files} selectedFile={selectedFile} onSelect={loadTrack} onRefresh={refreshList} loading={listLoading} />
+      <TrackList
+        files={files}
+        selectedFile={selectedServerFile}
+        onSelect={loadTrack}
+        onRefresh={refreshList}
+        loading={listLoading}
+        uploads={uploads}
+        selectedUploadId={selectedUploadId}
+        onSelectUpload={selectUpload}
+        onRemoveUpload={removeUpload}
+        onUploadFiles={handleUploadFiles}
+        uploadError={uploadError}
+      />
 
       <main className="main">
         <header className="app-header">
@@ -88,6 +152,22 @@ export default function App() {
           <>
             <section className="track-summary">
               <h2>{track.name}</h2>
+              <p className="grade-summary">{gradeResult.summary}</p>
+              <div className="direction-picker">
+                <span>Trail direction:</span>
+                {Object.values(DIRECTIONS).map((d) => (
+                  <label key={d.key} className="direction-option">
+                    <input
+                      type="radio"
+                      name="direction"
+                      value={d.key}
+                      checked={direction === d.key}
+                      onChange={() => setDirectionByFile((prev) => ({ ...prev, [selectedFile]: d.key }))}
+                    />
+                    {d.label}
+                  </label>
+                ))}
+              </div>
               <div className="stat-row">
                 <div className="stat-tile">
                   <div className="stat-label">Distance</div>
@@ -105,15 +185,27 @@ export default function App() {
                   <div className="stat-label">Berms detected</div>
                   <div className="stat-value">{track.berms.length}</div>
                 </div>
+                <div className="stat-tile">
+                  <div className="stat-label">Grade</div>
+                  <div className="stat-value">
+                    {gradeResult.grade ? (
+                      <span className="grade-pill" style={{ background: gradeResult.grade.color }}>
+                        {gradeResult.grade.label}
+                        {gradeResult.exceedsTopGrade ? '+' : ''}
+                      </span>
+                    ) : (
+                      <span className="grade-pill grade-pill-none">Ungraded</span>
+                    )}
+                  </div>
+                </div>
               </div>
+              {gradeResult.grade?.note && <p className="grade-note">{gradeResult.grade.note}</p>}
             </section>
-
-            <GradientLegend domainPct={track.gradientDomainPct} mode={mode} />
 
             <TrackMap track={track} mode={mode} highlightedBermIdx={highlightedBermIdx} onSelectBerm={setHighlightedBermIdx} />
 
             {track.hasTime ? (
-              <ElevationProfile track={track} mode={mode} />
+              <ElevationProfile track={track} mode={mode} direction={direction} />
             ) : (
               <p className="chart-empty">No timestamps in this file — gradient is shown, but berm bank angle can&rsquo;t be estimated without speed.</p>
             )}

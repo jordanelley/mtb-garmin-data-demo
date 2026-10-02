@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { gradientColor } from '../lib/colors.js'
+import { summarizeGradientByGrade } from '../lib/grade.js'
 
 const VIEW_W = 640
 const VIEW_H = 220
@@ -14,7 +15,7 @@ function niceEleTicks(min, max) {
   return ticks
 }
 
-export default function ElevationProfile({ track, mode }) {
+export default function ElevationProfile({ track, mode, direction }) {
   const containerRef = useRef(null)
   const [hoverIdx, setHoverIdx] = useState(null)
 
@@ -54,10 +55,19 @@ export default function ElevationProfile({ track, mode }) {
 
   const eleTicks = niceEleTicks(eleMin, eleMax)
   const hovered = hoverIdx !== null ? track.points[hoverIdx] : null
+  const gradeSummary = summarizeGradientByGrade(track, direction)
 
   return (
     <div className="chart-card">
       <h3>Elevation &amp; gradient</h3>
+      <div className="grade-breakdown">
+        {gradeSummary.map((s) => (
+          <span className="grade-breakdown-item" key={s.label}>
+            <span className="swatch-dot" style={{ background: s.color }} />
+            {s.pct}% {s.label}
+          </span>
+        ))}
+      </div>
       <div className="profile-container" ref={containerRef}>
         <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="profile-svg">
           {eleTicks.map((t) => (

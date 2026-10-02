@@ -5,13 +5,6 @@ export const DIVERGING = {
   dark: { down: '#3987e5', neutral: '#383835', up: '#e66767' },
 }
 
-export const STATUS = {
-  good: '#0ca30c',
-  warning: '#fab219',
-  serious: '#ec835a',
-  critical: '#d03b3b',
-}
-
 function hexToRgb(hex) {
   const n = Number.parseInt(hex.slice(1), 16)
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }

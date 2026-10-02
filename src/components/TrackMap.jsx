@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { gradientColor, STATUS } from '../lib/colors.js'
+import { gradientColor } from '../lib/colors.js'
 
 const VIEW_W = 640
 const VIEW_H = 420
@@ -72,8 +72,8 @@ export default function TrackMap({ track, mode, highlightedBermIdx, onSelectBerm
             const isHighlighted = i === highlightedBermIdx
             return (
               <g key={i} className="berm-marker" onClick={() => onSelectBerm(i)} style={{ cursor: 'pointer' }}>
-                {isHighlighted && <circle cx={pt.sx} cy={pt.sy} r={10} fill="none" stroke={STATUS[berm.severity.key]} strokeWidth={2} className="berm-pulse" />}
-                <circle cx={pt.sx} cy={pt.sy} r={5} fill={STATUS[berm.severity.key]} stroke="var(--surface)" strokeWidth={2} />
+                {isHighlighted && <circle cx={pt.sx} cy={pt.sy} r={10} fill="none" stroke={berm.grade.color} strokeWidth={2} className="berm-pulse" />}
+                <circle cx={pt.sx} cy={pt.sy} r={5} fill={berm.grade.color} stroke="var(--surface)" strokeWidth={2} />
               </g>
             )
           })}

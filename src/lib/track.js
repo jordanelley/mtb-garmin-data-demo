@@ -1,4 +1,5 @@
 import { circumradiusAndDirection, estimateBankAngleDeg, haversineMeters, projectToLocalMeters } from './geo.js'
+import { classifyBermGrade } from './grade.js'
 
 const WINDOW_HALF_M = 4 // how far either side of a point to look for curvature/speed neighbors
 const MIN_RELIABLE_RADIUS_M = 1 // tighter than this is almost certainly GPS jitter, not real geometry
@@ -6,20 +7,6 @@ const MAX_SANE_BANK_DEG = 60 // clamp for display; anything past this is noise, 
 const MIN_BERM_DEG = 8 // estimated bank angle floor to call a stretch a "berm" at all
 const MERGE_GAP_M = 3 // bridge small gaps so one physical berm isn't split into fragments
 const MIN_GRADIENT_RUN_M = 0.5 // guard against divide-by-near-zero on duplicate/near-duplicate points
-
-export const BERM_SEVERITY = {
-  good: { key: 'good', label: 'Mild', maxDeg: 12 },
-  warning: { key: 'warning', label: 'Moderate', maxDeg: 20 },
-  serious: { key: 'serious', label: 'Aggressive', maxDeg: 30 },
-  critical: { key: 'critical', label: 'Extreme', maxDeg: Infinity },
-}
-
-function classifyBermSeverity(angleDeg) {
-  if (angleDeg < BERM_SEVERITY.good.maxDeg) return BERM_SEVERITY.good
-  if (angleDeg < BERM_SEVERITY.warning.maxDeg) return BERM_SEVERITY.warning
-  if (angleDeg < BERM_SEVERITY.serious.maxDeg) return BERM_SEVERITY.serious
-  return BERM_SEVERITY.critical
-}
 
 function findWindowNeighbors(distM, i, halfWindowM) {
   let j1 = i
@@ -137,7 +124,7 @@ export function buildTrackModel(filename, name, rawPoints) {
       endDistM: distM[endIdx],
       peakAngleDeg,
       direction,
-      severity: classifyBermSeverity(peakAngleDeg),
+      grade: classifyBermGrade(peakAngleDeg),
     }
   })
 
