@@ -15,6 +15,10 @@ function formatDistance(m) {
   return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m.toFixed(0)} m`
 }
 
+// Served as plain static files (see vite-plugin-gpx-api.js), so this works both against the
+// dev/preview middleware and a fully static production build (e.g. GitHub Pages).
+const GPX_BASE_URL = `${import.meta.env.BASE_URL}gpx-tracks/`
+
 export default function App() {
   const mode = usePrefersDark() ? 'dark' : 'light'
 
@@ -37,7 +41,7 @@ export default function App() {
     setListLoading(true)
     setListError(null)
     try {
-      const res = await fetch('/api/tracks')
+      const res = await fetch(`${GPX_BASE_URL}manifest.json`)
       if (!res.ok) throw new Error(`Server returned ${res.status}`)
       const data = await res.json()
       setFiles(data.files)
@@ -59,7 +63,7 @@ export default function App() {
     setHighlightedBermIdx(null)
     setTrackLoading(true)
     try {
-      const res = await fetch(`/api/tracks/${encodeURIComponent(filename)}`)
+      const res = await fetch(`${GPX_BASE_URL}${encodeURIComponent(filename)}`)
       if (!res.ok) throw new Error(`Server returned ${res.status}`)
       const text = await res.text()
       const { name, points } = parseGpx(text)

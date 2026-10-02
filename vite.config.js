@@ -4,5 +4,6 @@ import gpxApi from './vite-plugin-gpx-api.js'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/mtb-garmin-data-demo/',
   plugins: [react(), gpxApi()],
 })
