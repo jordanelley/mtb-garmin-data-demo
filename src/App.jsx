@@ -3,7 +3,6 @@ import './App.css'
 import TrackList from './components/TrackList.jsx'
 import TrackMap from './components/TrackMap.jsx'
 import ElevationProfile from './components/ElevationProfile.jsx'
-import BermSeverityLegend from './components/BermSeverityLegend.jsx'
 import BermTable from './components/BermTable.jsx'
 import DataTable from './components/DataTable.jsx'
 import { parseGpx } from './lib/gpx.js'
@@ -74,6 +73,10 @@ export default function App() {
       setTrackLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    if (!selectedFile && files.length > 0) loadTrack(files[0].name)
+  }, [files, selectedFile, loadTrack])
 
   const selectUpload = useCallback(
     (id) => {
@@ -206,15 +209,14 @@ export default function App() {
               {gradeResult.grade?.note && <p className="grade-note">{gradeResult.grade.note}</p>}
             </section>
 
-            <TrackMap track={track} mode={mode} highlightedBermIdx={highlightedBermIdx} onSelectBerm={setHighlightedBermIdx} />
+            <TrackMap track={track} mode={mode} />
 
             {track.hasTime ? (
-              <ElevationProfile track={track} mode={mode} direction={direction} />
+              <ElevationProfile track={track} direction={direction} />
             ) : (
               <p className="chart-empty">No timestamps in this file — gradient is shown, but berm bank angle can&rsquo;t be estimated without speed.</p>
             )}
 
-            <BermSeverityLegend />
             <BermTable berms={track.berms} highlightedBermIdx={highlightedBermIdx} onSelectBerm={setHighlightedBermIdx} />
 
             <p className="formula-note">

@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
-import { gradientColor } from '../lib/colors.js'
-import { summarizeGradientByGrade } from '../lib/grade.js'
+import { classifyGradientGrade, DIRECTIONS, gradientGradeRanges, summarizeGradientByGrade } from '../lib/grade.js'
 
 const VIEW_W = 640
 const VIEW_H = 220
@@ -15,7 +14,7 @@ function niceEleTicks(min, max) {
   return ticks
 }
 
-export default function ElevationProfile({ track, mode, direction }) {
+export default function ElevationProfile({ track, direction }) {
   const containerRef = useRef(null)
   const [hoverIdx, setHoverIdx] = useState(null)
 
@@ -56,10 +55,20 @@ export default function ElevationProfile({ track, mode, direction }) {
   const eleTicks = niceEleTicks(eleMin, eleMax)
   const hovered = hoverIdx !== null ? track.points[hoverIdx] : null
   const gradeSummary = summarizeGradientByGrade(track, direction)
+  const directionLabel = Object.values(DIRECTIONS).find((d) => d.key === direction)?.label ?? ''
 
   return (
     <div className="chart-card">
       <h3>Elevation &amp; gradient</h3>
+      <div className="grade-key">
+        <span className="grade-key-label">Gradient ({directionLabel}):</span>
+        {gradientGradeRanges(direction).map((g) => (
+          <span className="grade-breakdown-item" key={g.label}>
+            <span className="swatch-dot" style={{ background: g.color }} />
+            {g.label} ({g.range})
+          </span>
+        ))}
+      </div>
       <div className="grade-breakdown">
         {gradeSummary.map((s) => (
           <span className="grade-breakdown-item" key={s.label}>
@@ -88,7 +97,7 @@ export default function ElevationProfile({ track, mode, direction }) {
           {track.points.slice(1).map((p, i) => {
             const prev = track.points[i]
             if (prev.gradPct === null) return null
-            const color = gradientColor(p.gradPct ?? 0, track.gradientDomainPct, mode)
+            const color = classifyGradientGrade(p.gradPct ?? 0, direction).color
             const x1 = screenX[i]
             const x2 = screenX[i + 1]
             return (
@@ -104,7 +113,7 @@ export default function ElevationProfile({ track, mode, direction }) {
           {track.points.slice(1).map((p, i) => {
             const prev = track.points[i]
             if (prev.ele === null || p.ele === null) return null
-            const color = p.gradPct === null ? 'var(--muted)' : gradientColor(p.gradPct, track.gradientDomainPct, mode)
+            const color = p.gradPct === null ? 'var(--muted)' : classifyGradientGrade(p.gradPct, direction).color
             return (
               <line key={`line-${i}`} x1={screenX[i]} y1={yScale(prev.ele)} x2={screenX[i + 1]} y2={yScale(p.ele)} stroke={color} strokeWidth={2} strokeLinecap="round" />
             )

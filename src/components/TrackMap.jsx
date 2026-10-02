@@ -23,7 +23,7 @@ function useProjection(track) {
   }, [track])
 }
 
-export default function TrackMap({ track, mode, highlightedBermIdx, onSelectBerm }) {
+export default function TrackMap({ track, mode }) {
   const toScreen = useProjection(track)
   const containerRef = useRef(null)
   const [hoverIdx, setHoverIdx] = useState(null)
@@ -67,20 +67,7 @@ export default function TrackMap({ track, mode, highlightedBermIdx, onSelectBerm
             )
           })}
 
-          {track.berms.map((berm, i) => {
-            const pt = screenPoints[berm.peakIdx]
-            const isHighlighted = i === highlightedBermIdx
-            return (
-              <g key={i} className="berm-marker" onClick={() => onSelectBerm(i)} style={{ cursor: 'pointer' }}>
-                {isHighlighted && <circle cx={pt.sx} cy={pt.sy} r={10} fill="none" stroke={berm.grade.color} strokeWidth={2} className="berm-pulse" />}
-                <circle cx={pt.sx} cy={pt.sy} r={5} fill={berm.grade.color} stroke="var(--surface)" strokeWidth={2} />
-              </g>
-            )
-          })}
-
           <rect x={0} y={0} width={VIEW_W} height={VIEW_H} fill="transparent" onMouseMove={handleMove} onMouseLeave={() => setHoverIdx(null)} />
-
-          {hovered && <circle cx={screenPoints[hoverIdx].sx} cy={screenPoints[hoverIdx].sy} r={4} fill="none" stroke="var(--text-primary)" strokeWidth={1.5} />}
         </svg>
 
         {hovered && (

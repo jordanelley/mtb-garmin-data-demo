@@ -1,4 +1,8 @@
+import { useState } from 'react'
+import { bermGradeRanges } from '../lib/grade.js'
 import EstimateBadge from './EstimateBadge.jsx'
+
+const COLLAPSED_COUNT = 3
 
 function summarizeByGrade(berms) {
   const byGrade = new Map()
@@ -12,25 +16,50 @@ function summarizeByGrade(berms) {
     .map((e) => ({ label: e.grade.label, color: e.grade.color, pct: Math.round((e.count / berms.length) * 100) }))
 }
 
+function GradeKey() {
+  return (
+    <div className="grade-key">
+      <span className="grade-key-label">Bank angle:</span>
+      {bermGradeRanges().map((g) => (
+        <span className="grade-breakdown-item" key={g.label}>
+          <span className="swatch-dot" style={{ background: g.color }} />
+          {g.label} ({g.range})
+        </span>
+      ))}
+    </div>
+  )
+}
+
 export default function BermTable({ berms, highlightedBermIdx, onSelectBerm }) {
+  const [expanded, setExpanded] = useState(false)
+  const [prevBerms, setPrevBerms] = useState(berms)
+  if (berms !== prevBerms) {
+    setPrevBerms(berms)
+    setExpanded(false)
+  }
+
   if (berms.length === 0) {
     return (
       <div className="chart-card">
         <h3>
           Detected berms <EstimateBadge title="Bank angle is estimated from GPS-derived turn radius and speed — see the formula note below." />
         </h3>
+        <GradeKey />
         <p className="chart-empty">No turns at or above 8° estimated bank angle were found in this track.</p>
       </div>
     )
   }
 
   const summary = summarizeByGrade(berms)
+  const visibleBerms = expanded ? berms : berms.slice(0, COLLAPSED_COUNT)
+  const hiddenCount = berms.length - visibleBerms.length
 
   return (
     <div className="chart-card">
       <h3>
         Detected berms <EstimateBadge title="Bank angle is estimated from GPS-derived turn radius and speed — see the formula note below." />
       </h3>
+      <GradeKey />
       <div className="grade-breakdown">
         {summary.map((s) => (
           <span className="grade-breakdown-item" key={s.label}>
@@ -51,7 +80,7 @@ export default function BermTable({ berms, highlightedBermIdx, onSelectBerm }) {
             </tr>
           </thead>
           <tbody>
-            {berms.map((b, i) => (
+            {visibleBerms.map((b, i) => (
               <tr key={i} className={i === highlightedBermIdx ? 'row-highlighted' : ''} onClick={() => onSelectBerm(i)} style={{ cursor: 'pointer' }}>
                 <td>{i + 1}</td>
                 <td>
@@ -68,6 +97,16 @@ export default function BermTable({ berms, highlightedBermIdx, onSelectBerm }) {
           </tbody>
         </table>
       </div>
+      {hiddenCount > 0 && (
+        <button type="button" className="btn-ghost btn-see-more" onClick={() => setExpanded(true)}>
+          See {hiddenCount} more
+        </button>
+      )}
+      {expanded && berms.length > COLLAPSED_COUNT && (
+        <button type="button" className="btn-ghost btn-see-more" onClick={() => setExpanded(false)}>
+          Show less
+        </button>
+      )}
     </div>
   )
 }

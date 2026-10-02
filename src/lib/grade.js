@@ -165,6 +165,21 @@ export function classifyBermGrade(angleDeg) {
   return BERM_GRADES.find((g) => angleDeg <= g.maxDeg) ?? BERM_GRADES[BERM_GRADES.length - 1]
 }
 
+function formatDegRange(prevMax, maxDeg) {
+  return maxDeg === Infinity ? `${prevMax}°+` : `${prevMax}–${maxDeg}°`
+}
+
+/** The berm bank-angle range that defines each Grade 1-5 bucket, for display as a legend/key. */
+export function bermGradeRanges() {
+  return BERM_GRADES.map((g, i) => ({ label: g.label, color: g.color, range: formatDegRange(i === 0 ? 0 : BERM_GRADES[i - 1].maxDeg, g.maxDeg) }))
+}
+
+/** The gradient-degree range that defines each Grade 1-6 bucket for the given direction, for display as a legend/key. */
+export function gradientGradeRanges(direction) {
+  const cutoffs = gradientCutoffs(direction)
+  return GRADE_RULES.map((rule, i) => ({ label: rule.label, color: rule.color, range: formatDegRange(i === 0 ? 0 : cutoffs[i - 1], cutoffs[i]) }))
+}
+
 function degFromGradPct(gradPct) {
   return (Math.atan(gradPct / 100) * 180) / Math.PI
 }
@@ -269,21 +284,33 @@ export function classifyTrailGrade(track, direction) {
   return { grade: topGrade, failures, exceedsTopGrade: true, summary }
 }
 
+// Each grade's baseline degree cutoff for a direction increases monotonically grade-over-grade,
+// so they double as disjoint bucket edges for classifying a single gradient reading.
+function gradientCutoffs(direction) {
+  const key = bandsFor(direction)
+  return GRADE_RULES.map((rule) => {
+    const bands = rule[key]
+    return bands === null ? Infinity : bands.baselineMaxDeg
+  })
+}
+
+/** Buckets a single gradient % reading onto the Grade 1-6 color/label scale for the given direction. */
+export function classifyGradientGrade(gradPct, direction) {
+  const deg = Math.abs(degFromGradPct(gradPct))
+  const cutoffs = gradientCutoffs(direction)
+  const idx = cutoffs.findIndex((c) => deg <= c)
+  return GRADE_RULES[idx === -1 ? cutoffs.length - 1 : idx]
+}
+
 /**
- * Buckets each gradient segment onto the Grade 1-6 scale using each grade's baseline degree
- * cutoff for the given direction — those cutoffs increase monotonically grade-over-grade, so
- * they double as disjoint bucket edges. Returns the % of trail distance landing in each grade
- * (grades with 0% are omitted), for a quick "how much of this trail is each grade" readout.
+ * Buckets each gradient segment onto the Grade 1-6 scale (see classifyGradientGrade) and
+ * returns the % of trail distance landing in each grade (grades with 0% are omitted), for a
+ * quick "how much of this trail is each grade" readout.
  */
 export function summarizeGradientByGrade(track, direction) {
   if (!track.hasEle) return []
 
-  const key = bandsFor(direction)
-  const cutoffs = GRADE_RULES.map((rule) => {
-    const bands = rule[key]
-    return bands === null ? Infinity : bands.baselineMaxDeg
-  })
-
+  const cutoffs = gradientCutoffs(direction)
   const distByGrade = new Array(GRADE_RULES.length).fill(0)
   let totalDistM = 0
 

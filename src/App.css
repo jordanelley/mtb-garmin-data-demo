@@ -306,19 +306,6 @@
   stroke-dasharray: 3 3;
 }
 
-.berm-marker circle {
-  transition: r 0.1s ease;
-}
-
-.berm-pulse {
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; r: 10; }
-  50% { opacity: 0.4; r: 14; }
-}
-
 .chart-tooltip {
   position: absolute;
   background: var(--surface);
@@ -377,6 +364,21 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.grade-key {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+.grade-key-label {
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 .swatch-dot {
@@ -465,6 +467,10 @@
 .btn-ghost:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.btn-see-more {
+  margin-top: 10px;
 }
 
 @media (max-width: 720px) {

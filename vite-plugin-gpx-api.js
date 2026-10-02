@@ -34,12 +34,13 @@ async function listGpxFiles(gpxDir) {
 export default function gpxApiPlugin() {
   const gpxDir = path.resolve(process.cwd(), GPX_DIR_NAME)
   let outDir = 'dist'
+  let urlPrefix = `/${GPX_DIR_NAME}/`
 
   async function handle(req, res, next) {
-    if (!req.url?.startsWith('/gpx-tracks/')) return next()
+    if (!req.url?.startsWith(urlPrefix)) return next()
 
     const url = new URL(req.url, 'http://localhost')
-    const segment = decodeURIComponent(url.pathname.slice('/gpx-tracks/'.length))
+    const segment = decodeURIComponent(url.pathname.slice(urlPrefix.length))
 
     try {
       if (segment === 'manifest.json') {
@@ -63,6 +64,7 @@ export default function gpxApiPlugin() {
     name: 'gpx-api',
     configResolved(config) {
       outDir = config.build.outDir
+      urlPrefix = `${config.base}${GPX_DIR_NAME}/`
     },
     configureServer(server) {
       server.middlewares.use(handle)
