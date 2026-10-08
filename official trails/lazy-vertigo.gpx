@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<gpx version="1.1" creator="Trailforks.com" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd">
+<metadata>
+<name>Lazy Vertigo Trailforks Trail</name>
+<link href="https://www.trailforks.com/">
+<text>Trailforks</text>
+</link>
+</metadata>
+<trk>
+<name>
+Lazy Vertigo
+</name>
+<link href="https://www.trailforks.com/trails/lazy-vertigo/">
+</link>
+<trkseg>
+<trkpt lat="-45.02669" lon="168.64632">
+<ele>803</ele>
+<time>2026-08-15T23:02:43-07:00</time>
+</trkpt>
+<trkpt lat="-45.0267" lon="168.6461">
+<ele>804</ele>
+<time>2026-08-15T23:02:44-07:00</time>
+</trkpt>
+<trkpt lat="-45.02672" lon="168.64601">
+<ele>804</ele>
+<time>2026-08-15T23:02:45-07:00</time>
+</trkpt>
+<trkpt lat="-45.02673" lon="168.646">
+<ele>804</ele>
+<time>2026-08-15T23:02:46-07:00</time>
+</trkpt>
+<trkpt lat="-45.02677" lon="168.64598">
+<ele>804</ele>
+<time>2026-08-15T23:02:47-07:00</time>
+</trkpt>
+<trkpt lat="-45.02683" lon="168.646">
+<ele>792</ele>
+<time>2026-08-15T23:02:48-07:00</time>
+</trkpt>
+<trkpt lat="-45.02686" lon="168.64607">
+<ele>792</ele>
+<time>2026-08-15T23:02:49-07:00</time>
+</trkpt>
+<trkpt lat="-45.0269" lon="168.64629">
+<ele>791</ele>
+<time>2026-08-15T23:02:50-07:00</time>
+</trkpt>
+<trkpt lat="-45.02695" lon="168.64671">
+<ele>790</ele>
+<time>2026-08-15T23:02:51-07:00</time>
+</trkpt>
+<trkpt lat="-45.02698" lon="168.64726">
+<ele>784</ele>
+<time>2026-08-15T23:02:52-07:00</time>
+</trkpt>
+<trkpt lat="-45.02701" lon="168.64742">
+<ele>778</ele>
+<time>2026-08-15T23:02:53-07:00</time>
+</trkpt>
+<trkpt lat="-45.02704" lon="168.64745">
+<ele>778</ele>
+<time>2026-08-15T23:02:54-07:00</time>
+</trkpt>
+<trkpt lat="-45.0271" lon="168.6474">
+<ele>767</ele>
+<time>2026-08-15T23:02:55-07:00</time>
+</trkpt>
+<trkpt lat="-45.02714" lon="168.64727">
+<ele>772</ele>
+<time>2026-08-15T23:02:56-07:00</time>
+</trkpt>
+<trkpt lat="-45.02725" lon="168.64673">
+<ele>777</ele>
+<time>2026-08-15T23:02:57-07:00</time>
+</trkpt>
+<trkpt lat="-45.02729" lon="168.64654">
+<ele>777</ele>
+<time>2026-08-15T23:02:58-07:00</time>
+</trkpt>
+<trkpt lat="-45.02731" lon="168.6462">
+<ele>777</ele>
+<time>2026-08-15T23:02:59-07:00</time>
+</trkpt>
+<trkpt lat="-45.02732" lon="168.64609">
+<ele>777</ele>
+<time>2026-08-15T23:03:00-07:00</time>
+</trkpt>
+<trkpt lat="-45.02734" lon="168.64607">
+<ele>777</ele>
+<time>2026-08-15T23:03:01-07:00</time>
+</trkpt>
+<trkpt lat="-45.02737" lon="168.64608">
+<ele>761</ele>
+<time>2026-08-15T23:03:02-07:00</time>
+</trkpt>
+<trkpt lat="-45.02745" lon="168.64619">
+<ele>761</ele>
+<time>2026-08-15T23:03:03-07:00</time>
+</trkpt>
+<trkpt lat="-45.0275" lon="168.6463">
+<ele>763</ele>
+<time>2026-08-15T23:03:04-07:00</time>
+</trkpt>
+<trkpt lat="-45.02758" lon="168.64671">
+<ele>763</ele>
+<time>2026-08-15T23:03:05-07:00</time>
+</trkpt>
+<trkpt lat="-45.02766" lon="168.64711">
+<ele>747</ele>
+<time>2026-08-15T23:03:06-07:00</time>
+</trkpt>
+<trkpt lat="-45.02771" lon="168.64717">
+<ele>747</ele>
+<time>2026-08-15T23:03:07-07:00</time>
+</trkpt>
+<trkpt lat="-45.02775" lon="168.64713">
+<ele>747</ele>
+<time>2026-08-15T23:03:08-07:00</time>
+</trkpt>
+<trkpt lat="-45.02775" lon="168.64704">
+<ele>750</ele>
+<time>2026-08-15T23:03:09-07:00</time>
+</trkpt>
+<trkpt lat="-45.02774" lon="168.64691">
+<ele>750</ele>
+<time>2026-08-15T23:03:10-07:00</time>
+</trkpt>
+<trkpt lat="-45.02776" lon="168.64671">
+<ele>748</ele>
+<time>2026-08-15T23:03:11-07:00</time>
+</trkpt>
+<trkpt lat="-45.02776" lon="168.6465">
+<ele>748</ele>
+<time>2026-08-15T23:03:12-07:00</time>
+</trkpt>
+<trkpt lat="-45.0278" lon="168.64644">
+<ele>748</ele>
+<time>2026-08-15T23:03:13-07:00</time>
+</trkpt>
+<trkpt lat="-45.02786" lon="168.64652">
+<ele>748</ele>
+<time>2026-08-15T23:03:14-07:00</time>
+</trkpt>
+</trkseg>
+</trk>
+</gpx>

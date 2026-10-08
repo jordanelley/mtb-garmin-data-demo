@@ -1,7 +1,6 @@
 import { cp, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-const GPX_DIR_NAME = 'gpx-tracks'
 const SAFE_FILENAME = /^[A-Za-z0-9][A-Za-z0-9 ._-]*\.gpx$/
 
 function send(res, status, body, contentType = 'application/json') {
@@ -10,12 +9,12 @@ function send(res, status, body, contentType = 'application/json') {
   res.end(typeof body === 'string' ? body : JSON.stringify(body))
 }
 
-async function listGpxFiles(gpxDir) {
-  const entries = await readdir(gpxDir, { withFileTypes: true })
+async function listGpxFiles(dir) {
+  const entries = await readdir(dir, { withFileTypes: true })
   const files = []
   for (const entry of entries) {
     if (!entry.isFile() || !SAFE_FILENAME.test(entry.name)) continue
-    const full = path.join(gpxDir, entry.name)
+    const full = path.join(dir, entry.name)
     const info = await stat(full)
     files.push({ name: entry.name, size: info.size, modifiedAt: info.mtime.toISOString() })
   }
@@ -24,17 +23,20 @@ async function listGpxFiles(gpxDir) {
 }
 
 /**
- * Serves .gpx files from a project-root folder under /gpx-tracks/, both as a manifest
- * (/gpx-tracks/manifest.json) and as raw file content (/gpx-tracks/<filename>). Dev/preview
+ * Serves .gpx files from a project-root folder under /<routeName>/, both as a manifest
+ * (/<routeName>/manifest.json) and as raw file content (/<routeName>/<filename>). Dev/preview
  * get this dynamically via middleware, so dropping a file in makes it show up on refresh with
  * no rebuild. A production `vite build` instead copies the same files + a static manifest.json
  * into the build output, so the deployed site (e.g. GitHub Pages, which can't run this
  * middleware) serves them as plain static files at the same URLs.
+ *
+ * `dirName` is the on-disk folder (may contain spaces); `routeName` is the URL-safe path
+ * segment it's served under, since the two don't always match (e.g. "official trails" -> "official-trails").
  */
-export default function gpxApiPlugin() {
-  const gpxDir = path.resolve(process.cwd(), GPX_DIR_NAME)
+function gpxFolderApiPlugin({ dirName, routeName = dirName }) {
+  const sourceDir = path.resolve(process.cwd(), dirName)
   let outDir = 'dist'
-  let urlPrefix = `/${GPX_DIR_NAME}/`
+  let urlPrefix = `/${routeName}/`
 
   async function handle(req, res, next) {
     if (!req.url?.startsWith(urlPrefix)) return next()
@@ -44,13 +46,13 @@ export default function gpxApiPlugin() {
 
     try {
       if (segment === 'manifest.json') {
-        return send(res, 200, { files: await listGpxFiles(gpxDir) })
+        return send(res, 200, { files: await listGpxFiles(sourceDir) })
       }
 
       if (!SAFE_FILENAME.test(segment)) return send(res, 400, { error: 'Invalid filename' })
 
-      const resolved = path.resolve(gpxDir, segment)
-      if (resolved !== path.join(gpxDir, segment)) return send(res, 400, { error: 'Invalid path' })
+      const resolved = path.resolve(sourceDir, segment)
+      if (resolved !== path.join(sourceDir, segment)) return send(res, 400, { error: 'Invalid path' })
 
       const contents = await readFile(resolved, 'utf-8')
       return send(res, 200, contents, 'application/gpx+xml')
@@ -61,10 +63,10 @@ export default function gpxApiPlugin() {
   }
 
   return {
-    name: 'gpx-api',
+    name: `gpx-api-${routeName}`,
     configResolved(config) {
       outDir = config.build.outDir
-      urlPrefix = `${config.base}${GPX_DIR_NAME}/`
+      urlPrefix = `${config.base}${routeName}/`
     },
     configureServer(server) {
       server.middlewares.use(handle)
@@ -73,11 +75,19 @@ export default function gpxApiPlugin() {
       server.middlewares.use(handle)
     },
     async closeBundle() {
-      const destDir = path.resolve(process.cwd(), outDir, GPX_DIR_NAME)
-      const files = await listGpxFiles(gpxDir)
+      const destDir = path.resolve(process.cwd(), outDir, routeName)
+      const files = await listGpxFiles(sourceDir)
       await mkdir(destDir, { recursive: true })
-      await Promise.all(files.map((f) => cp(path.join(gpxDir, f.name), path.join(destDir, f.name))))
+      await Promise.all(files.map((f) => cp(path.join(sourceDir, f.name), path.join(destDir, f.name))))
       await writeFile(path.join(destDir, 'manifest.json'), JSON.stringify({ files }))
     },
   }
+}
+
+export function gpxTracksApi() {
+  return gpxFolderApiPlugin({ dirName: 'gpx-tracks', routeName: 'gpx-tracks' })
+}
+
+export function officialTrailsApi() {
+  return gpxFolderApiPlugin({ dirName: 'official trails', routeName: 'official-trails' })
 }

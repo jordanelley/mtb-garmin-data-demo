@@ -236,6 +236,39 @@
   cursor: pointer;
 }
 
+.trail-match-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.trail-match-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.trail-match-pill-match {
+  background: #2f9e44;
+}
+
+.trail-match-pill-partial {
+  background: #d9a300;
+}
+
+.trail-match-pill-none {
+  background: var(--muted);
+}
+
+.trail-match-score {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 .grade-pill {
   display: inline-block;
   padding: 2px 10px;

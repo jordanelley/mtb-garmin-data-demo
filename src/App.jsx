@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import './App.css'
 import TrackList from './components/TrackList.jsx'
 import TrackMap from './components/TrackMap.jsx'
@@ -9,6 +9,7 @@ import { parseGpx } from './lib/gpx.js'
 import { buildTrackModel } from './lib/track.js'
 import { usePrefersDark } from './lib/usePrefersDark.js'
 import { classifyTrailGrade, DIRECTIONS } from './lib/grade.js'
+import { classifyTrailMatch, matchOfficialTrails, prepareOfficialTrail } from './lib/trailMatch.js'
 
 function formatDistance(m) {
   return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m.toFixed(0)} m`
@@ -17,6 +18,7 @@ function formatDistance(m) {
 // Served as plain static files (see vite-plugin-gpx-api.js), so this works both against the
 // dev/preview middleware and a fully static production build (e.g. GitHub Pages).
 const GPX_BASE_URL = `${import.meta.env.BASE_URL}gpx-tracks/`
+const OFFICIAL_TRAILS_BASE_URL = `${import.meta.env.BASE_URL}official-trails/`
 
 export default function App() {
   const mode = usePrefersDark() ? 'dark' : 'light'
@@ -35,6 +37,34 @@ export default function App() {
 
   const [uploads, setUploads] = useState([])
   const [uploadError, setUploadError] = useState(null)
+
+  const [officialTrails, setOfficialTrails] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadOfficialTrails() {
+      try {
+        const res = await fetch(`${OFFICIAL_TRAILS_BASE_URL}manifest.json`)
+        if (!res.ok) throw new Error(`Server returned ${res.status}`)
+        const { files } = await res.json()
+        const trails = await Promise.all(
+          files.map(async (f) => {
+            const fileRes = await fetch(`${OFFICIAL_TRAILS_BASE_URL}${encodeURIComponent(f.name)}`)
+            const text = await fileRes.text()
+            const { name, points } = parseGpx(text)
+            return prepareOfficialTrail(name || f.name, points)
+          }),
+        )
+        if (!cancelled) setOfficialTrails(trails)
+      } catch {
+        // Trail matching is a bonus annotation, not core functionality — fail silently.
+      }
+    }
+    loadOfficialTrails()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const refreshList = useCallback(async () => {
     setListLoading(true)
@@ -123,6 +153,11 @@ export default function App() {
   const direction = (selectedFile && directionByFile[selectedFile]) || DIRECTIONS.twoWay.key
   const gradeResult = track ? classifyTrailGrade(track, direction) : null
 
+  const trailMatch = useMemo(() => {
+    if (!track || officialTrails.length === 0) return null
+    return classifyTrailMatch(matchOfficialTrails(track.points, officialTrails))
+  }, [track, officialTrails])
+
   const selectedUploadId = selectedFile?.startsWith('upload:') ? selectedFile.slice('upload:'.length) : null
   const selectedServerFile = selectedUploadId ? null : selectedFile
 
@@ -160,6 +195,18 @@ export default function App() {
             <section className="track-summary">
               <h2>{track.name}</h2>
               <p className="grade-summary">{gradeResult.summary}</p>
+              {trailMatch && (
+                <p className="trail-match-row">
+                  <span className={`trail-match-pill trail-match-pill-${trailMatch.level}`}>
+                    {trailMatch.level === 'match' && `Matches ${trailMatch.name}`}
+                    {trailMatch.level === 'partial' && `Partial match: ${trailMatch.name}`}
+                    {trailMatch.level === 'none' && 'No official trail match'}
+                  </span>
+                  {trailMatch.level !== 'none' && (
+                    <span className="trail-match-score">{Math.round(trailMatch.score * 100)}% of points overlap</span>
+                  )}
+                </p>
+              )}
               <div className="direction-picker">
                 <span>Trail direction:</span>
                 {Object.values(DIRECTIONS).map((d) => (
