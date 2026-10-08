@@ -28,7 +28,7 @@ export default function TrackList({
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h2>Tracks</h2>
+        <h2>Data</h2>
         <button type="button" className="btn-ghost" onClick={onRefresh} disabled={loading}>
           {loading ? 'Scanning…' : 'Refresh'}
         </button>

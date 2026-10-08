@@ -26,7 +26,7 @@ function useProjection(bounds) {
   }, [bounds])
 }
 
-export default function TrackMap({ track, mode, officialTrail, tooSteepRuns }) {
+export default function TrackMap({ track, mode, officialTrail, tooSteepRuns, activityLabel = 'Ridden track' }) {
   // Official trail points are raw lat/lon — project them into the same local-meter frame as the
   // ridden track (same centroid) so the two can share one screen projection and overlay correctly.
   const officialProjected = useMemo(
@@ -115,7 +115,7 @@ export default function TrackMap({ track, mode, officialTrail, tooSteepRuns }) {
       {officialTrail && (
         <p className="map-legend">
           <span className="swatch-dot" style={{ background: officialColor }} /> {officialTrail.name} (official, {officialTrail.officialGrade?.label ?? 'ungraded'})
-          <span className="swatch-dot" style={{ background: ACTIVITY_COLOR, marginLeft: 14 }} /> Ridden track
+          <span className="swatch-dot" style={{ background: ACTIVITY_COLOR, marginLeft: 14 }} /> {activityLabel}
           {tooSteepRuns?.length > 0 && (
             <label className="map-toggle">
               <input type="checkbox" checked={showTooSteep} onChange={(e) => setShowTooSteep(e.target.checked)} />

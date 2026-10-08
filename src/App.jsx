@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import TrackList from './components/TrackList.jsx'
+import OfficialTrailList from './components/OfficialTrailList.jsx'
 import TrackMap from './components/TrackMap.jsx'
 import ElevationProfile from './components/ElevationProfile.jsx'
 import BermTable from './components/BermTable.jsx'
@@ -10,6 +11,7 @@ import { buildTrackModel } from './lib/track.js'
 import { usePrefersDark } from './lib/usePrefersDark.js'
 import { classifyTrailGrade, DIRECTIONS, findTooSteepRuns, officialGradeFor } from './lib/grade.js'
 import { classifyTrailMatch, matchOfficialTrails, prepareOfficialTrail } from './lib/trailMatch.js'
+import { buildAverageTrack } from './lib/averageTrail.js'
 
 function formatDistance(m) {
   return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m.toFixed(0)} m`
@@ -66,6 +68,57 @@ export default function App() {
     }
   }, [])
 
+  // Index every activity file by whichever official trail it best matches, so clicking a trail
+  // in the sidebar can show the average of all rides recorded on it. Runs once both the activity
+  // manifest and the official trails are loaded; activities that don't match anything are dropped.
+  const [activitiesByTrail, setActivitiesByTrail] = useState(new Map())
+  const [activitiesIndexLoading, setActivitiesIndexLoading] = useState(false)
+
+  useEffect(() => {
+    if (files.length === 0 || officialTrails.length === 0) return
+    let cancelled = false
+    async function buildIndex() {
+      setActivitiesIndexLoading(true)
+      const byTrail = new Map()
+      await Promise.all(
+        files.map(async (f) => {
+          try {
+            const res = await fetch(`${GPX_BASE_URL}${encodeURIComponent(f.name)}`)
+            if (!res.ok) return
+            const text = await res.text()
+            const { name, points } = parseGpx(text)
+            const model = buildTrackModel(f.name, name, points)
+            const match = classifyTrailMatch(matchOfficialTrails(model.points, officialTrails))
+            if (match.level === 'none') return
+            const list = byTrail.get(match.name) ?? []
+            list.push({ filename: f.name, track: model })
+            byTrail.set(match.name, list)
+          } catch {
+            // Skip any activity file that fails to parse — the average-trail index is a bonus view.
+          }
+        }),
+      )
+      if (!cancelled) {
+        setActivitiesByTrail(byTrail)
+        setActivitiesIndexLoading(false)
+      }
+    }
+    buildIndex()
+    return () => {
+      cancelled = true
+    }
+  }, [files, officialTrails])
+
+  const [selectedOfficialTrailName, setSelectedOfficialTrailName] = useState(null)
+
+  const selectOfficialTrail = useCallback((name) => {
+    setSelectedOfficialTrailName(name)
+    setSelectedFile(null)
+    setTrack(null)
+    setTrackError(null)
+    setHighlightedBermIdx(null)
+  }, [])
+
   const refreshList = useCallback(async () => {
     setListLoading(true)
     setListError(null)
@@ -86,6 +139,7 @@ export default function App() {
   }, [refreshList])
 
   const loadTrack = useCallback(async (filename) => {
+    setSelectedOfficialTrailName(null)
     setSelectedFile(filename)
     setTrack(null)
     setTrackError(null)
@@ -104,14 +158,22 @@ export default function App() {
     }
   }, [])
 
+  // Only auto-select the first activity once, on initial load — not every time selection is
+  // cleared, since selecting an official trail also clears selectedFile and shouldn't be undone.
+  const didAutoSelect = useRef(false)
   useEffect(() => {
-    if (!selectedFile && files.length > 0) loadTrack(files[0].name)
-  }, [files, selectedFile, loadTrack])
+    if (didAutoSelect.current) return
+    if (!selectedFile && !selectedOfficialTrailName && files.length > 0) {
+      didAutoSelect.current = true
+      loadTrack(files[0].name)
+    }
+  }, [files, selectedFile, selectedOfficialTrailName, loadTrack])
 
   const selectUpload = useCallback(
     (id) => {
       const entry = uploads.find((u) => u.id === id)
       if (!entry) return
+      setSelectedOfficialTrailName(null)
       setSelectedFile(`upload:${id}`)
       setTrack(entry.track)
       setTrackError(null)
@@ -150,9 +212,6 @@ export default function App() {
     [selectedFile],
   )
 
-  const direction = (selectedFile && directionByFile[selectedFile]) || DIRECTIONS.twoWay.key
-  const gradeResult = track ? classifyTrailGrade(track, direction) : null
-
   const trailMatch = useMemo(() => {
     if (!track || officialTrails.length === 0) return null
     return classifyTrailMatch(matchOfficialTrails(track.points, officialTrails))
@@ -163,10 +222,34 @@ export default function App() {
     return officialTrails.find((t) => t.name === trailMatch.name) ?? null
   }, [trailMatch, officialTrails])
 
+  // Viewing a single ridden activity, or the averaged-rides view for a sidebar-selected official
+  // trail — mutually exclusive, so most of the detail panel below reads from these "active" values
+  // regardless of which mode is in play.
+  const isTrailMode = selectedOfficialTrailName !== null
+  const selectedOfficialTrail = useMemo(
+    () => officialTrails.find((t) => t.name === selectedOfficialTrailName) ?? null,
+    [officialTrails, selectedOfficialTrailName],
+  )
+  const matchedActivitiesForTrail = useMemo(
+    () => (selectedOfficialTrailName && activitiesByTrail.get(selectedOfficialTrailName)) || [],
+    [selectedOfficialTrailName, activitiesByTrail],
+  )
+  const averageTrack = useMemo(() => {
+    if (!selectedOfficialTrail || matchedActivitiesForTrail.length === 0) return null
+    return buildAverageTrack(selectedOfficialTrail, matchedActivitiesForTrail)
+  }, [selectedOfficialTrail, matchedActivitiesForTrail])
+
+  const activeTrack = isTrailMode ? averageTrack : track
+  const activeOfficialTrail = isTrailMode ? selectedOfficialTrail : matchedOfficialTrail
+  const directionKey = isTrailMode ? `trail:${selectedOfficialTrailName}` : selectedFile
+
+  const direction = (directionKey && directionByFile[directionKey]) || DIRECTIONS.twoWay.key
+  const gradeResult = activeTrack ? classifyTrailGrade(activeTrack, direction) : null
+
   const tooSteepRuns = useMemo(() => {
-    if (!track || !matchedOfficialTrail?.officialGrade) return []
-    return findTooSteepRuns(track, matchedOfficialTrail.officialGrade, direction)
-  }, [track, matchedOfficialTrail, direction])
+    if (!activeTrack || !activeOfficialTrail?.officialGrade) return []
+    return findTooSteepRuns(activeTrack, activeOfficialTrail.officialGrade, direction)
+  }, [activeTrack, activeOfficialTrail, direction])
 
   const selectedUploadId = selectedFile?.startsWith('upload:') ? selectedFile.slice('upload:'.length) : null
   const selectedServerFile = selectedUploadId ? null : selectedFile
@@ -187,6 +270,14 @@ export default function App() {
         uploadError={uploadError}
       />
 
+      <OfficialTrailList
+        trails={officialTrails}
+        activitiesByTrail={activitiesByTrail}
+        selectedName={selectedOfficialTrailName}
+        onSelect={selectOfficialTrail}
+        ridesLoading={activitiesIndexLoading}
+      />
+
       <main className="main">
         <header className="app-header">
           <h1>Audit Tracks</h1>
@@ -195,17 +286,23 @@ export default function App() {
 
         {listError && <p className="error-banner">Couldn&rsquo;t list GPX files: {listError}</p>}
 
-        {!selectedFile && !listError && <p className="chart-empty">Select a track from the sidebar to get started.</p>}
+        {!isTrailMode && !selectedFile && !listError && <p className="chart-empty">Select a track from the sidebar to get started.</p>}
 
-        {trackLoading && <p className="chart-empty">Loading track…</p>}
-        {trackError && <p className="error-banner">Couldn&rsquo;t load this track: {trackError}</p>}
+        {isTrailMode && !averageTrack && (
+          <p className="chart-empty">
+            {activitiesIndexLoading ? 'Loading recorded rides…' : 'No recorded rides matched this trail yet.'}
+          </p>
+        )}
 
-        {track && !trackLoading && (
+        {!isTrailMode && trackLoading && <p className="chart-empty">Loading track…</p>}
+        {!isTrailMode && trackError && <p className="error-banner">Couldn&rsquo;t load this track: {trackError}</p>}
+
+        {activeTrack && !(trackLoading && !isTrailMode) && (
           <>
             <section className="track-summary">
-              <h2>{track.name}</h2>
+              <h2>{activeTrack.name}</h2>
               <p className="grade-summary">{gradeResult.summary}</p>
-              {trailMatch && (
+              {!isTrailMode && trailMatch && (
                 <p className="trail-match-row">
                   <span className={`trail-match-pill trail-match-pill-${trailMatch.level}`}>
                     {trailMatch.level === 'match' && `Matches ${trailMatch.name}`}
@@ -217,6 +314,13 @@ export default function App() {
                   )}
                 </p>
               )}
+              {isTrailMode && (
+                <p className="trail-match-row">
+                  <span className="trail-match-pill trail-match-pill-match">
+                    Average of {matchedActivitiesForTrail.length} recorded ride{matchedActivitiesForTrail.length === 1 ? '' : 's'}
+                  </span>
+                </p>
+              )}
               <div className="direction-picker">
                 <span>Trail direction:</span>
                 {Object.values(DIRECTIONS).map((d) => (
@@ -226,7 +330,7 @@ export default function App() {
                       name="direction"
                       value={d.key}
                       checked={direction === d.key}
-                      onChange={() => setDirectionByFile((prev) => ({ ...prev, [selectedFile]: d.key }))}
+                      onChange={() => setDirectionByFile((prev) => ({ ...prev, [directionKey]: d.key }))}
                     />
                     {d.label}
                   </label>
@@ -235,19 +339,19 @@ export default function App() {
               <div className="stat-row">
                 <div className="stat-tile">
                   <div className="stat-label">Distance</div>
-                  <div className="stat-value">{formatDistance(track.totals.distanceM)}</div>
+                  <div className="stat-value">{formatDistance(activeTrack.totals.distanceM)}</div>
                 </div>
                 <div className="stat-tile">
                   <div className="stat-label">Elevation gain</div>
-                  <div className="stat-value">{track.hasEle ? `+${track.totals.elevationGainM.toFixed(0)} m` : '—'}</div>
+                  <div className="stat-value">{activeTrack.hasEle ? `+${activeTrack.totals.elevationGainM.toFixed(0)} m` : '—'}</div>
                 </div>
                 <div className="stat-tile">
                   <div className="stat-label">Elevation loss</div>
-                  <div className="stat-value">{track.hasEle ? `-${track.totals.elevationLossM.toFixed(0)} m` : '—'}</div>
+                  <div className="stat-value">{activeTrack.hasEle ? `-${activeTrack.totals.elevationLossM.toFixed(0)} m` : '—'}</div>
                 </div>
                 <div className="stat-tile">
                   <div className="stat-label">Berms detected</div>
-                  <div className="stat-value">{track.berms.length}</div>
+                  <div className="stat-value">{activeTrack.berms.length}</div>
                 </div>
                 <div className="stat-tile">
                   <div className="stat-label">Grade</div>
@@ -262,12 +366,12 @@ export default function App() {
                     )}
                   </div>
                 </div>
-                {trailMatch?.officialGrade && (
+                {activeOfficialTrail?.officialGrade && (
                   <div className="stat-tile">
                     <div className="stat-label">Official grading</div>
                     <div className="stat-value">
-                      <span className="grade-pill" style={{ background: trailMatch.officialGrade.color }}>
-                        {trailMatch.officialGrade.label}
+                      <span className="grade-pill" style={{ background: activeOfficialTrail.officialGrade.color }}>
+                        {activeOfficialTrail.officialGrade.label}
                       </span>
                     </div>
                   </div>
@@ -276,24 +380,31 @@ export default function App() {
               {gradeResult.grade?.note && <p className="grade-note">{gradeResult.grade.note}</p>}
             </section>
 
-            <TrackMap track={track} mode={mode} officialTrail={matchedOfficialTrail} tooSteepRuns={tooSteepRuns} />
+            <TrackMap
+              track={activeTrack}
+              mode={mode}
+              officialTrail={activeOfficialTrail}
+              tooSteepRuns={tooSteepRuns}
+              activityLabel={isTrailMode ? 'Average of recorded rides' : 'Ridden track'}
+            />
 
-            {track.hasTime ? (
-              <ElevationProfile track={track} direction={direction} />
+            {activeTrack.hasTime ? (
+              <ElevationProfile track={activeTrack} direction={direction} />
             ) : (
               <p className="chart-empty">No timestamps in this file — gradient is shown, but berm bank angle can&rsquo;t be estimated without speed.</p>
             )}
 
-            <BermTable berms={track.berms} highlightedBermIdx={highlightedBermIdx} onSelectBerm={setHighlightedBermIdx} />
+            <BermTable berms={activeTrack.berms} highlightedBermIdx={highlightedBermIdx} onSelectBerm={setHighlightedBermIdx} />
 
             <p className="formula-note">
               <strong>How berm angle is estimated:</strong> for each point, a local turn radius is fit through nearby GPS points and
               combined with speed (from timestamps) using the ideal banking formula <em>θ = atan(v² / (g·r))</em> — the lean angle at
               which a rider corners with zero net lateral force. This depends entirely on GPS point accuracy and spacing; treat it as a
               guide to relative berm steepness, not a measured value.
+              {isTrailMode && ' In this average view, speed at each point is also averaged across matched rides, so treat it as indicative rather than precise.'}
             </p>
 
-            <DataTable track={track} />
+            <DataTable track={activeTrack} />
           </>
         )}
       </main>
