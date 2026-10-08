@@ -149,6 +149,26 @@ export const GRADE_RULES = [
   },
 ]
 
+// The club's official sign-posted grading for each official trail file, independent of the
+// gradient-based classification above — this is what's printed on the trailhead signage, not
+// what the GPX math derives.
+const OFFICIAL_GRADE_BY_FILE = {
+  'hammy-s-return.gpx': 3,
+  'lazy-vertigo.gpx': 3,
+  'lower-hammy-s-track-16507.gpx': 3,
+  'original.gpx': 4,
+  'single-track-sandwich.gpx': 4,
+  'thunder-goat.gpx': 3,
+  'upper-hammy-s-track-8273.gpx': 3,
+  'vertigo.gpx': 3,
+}
+
+/** Looks up the official signed grade for an official trail file, by its on-disk filename. */
+export function officialGradeFor(filename) {
+  const grade = OFFICIAL_GRADE_BY_FILE[filename]
+  return grade ? GRADE_RULES.find((r) => r.grade === grade) : null
+}
+
 // Buckets a berm's peak bank angle onto the same Grade 1-5 color/label scale as GRADE_RULES,
 // using the bank-angle caps from the grading criteria (10/20/30/40/50°). Grade 6 has no berm
 // cap in the criteria, so berms top out visually at Grade 5.

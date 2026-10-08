@@ -33,9 +33,10 @@ function inBounds(p, b) {
 }
 
 /** Pre-processes an official trail once (on load) so matching against it later is cheap. */
-export function prepareOfficialTrail(name, points) {
+export function prepareOfficialTrail(name, points, officialGrade = null) {
   return {
     name,
+    officialGrade,
     points: downsample(points, MAX_SAMPLE_POINTS),
     bounds: boundsOf(points, BBOX_PAD_DEG),
   }
@@ -54,7 +55,7 @@ export function matchOfficialTrails(trackPoints, officialTrails) {
   return officialTrails
     .map((trail) => {
       const inBox = sample.filter((p) => inBounds(p, trail.bounds))
-      if (inBox.length < Math.max(5, sample.length * 0.05)) return { name: trail.name, score: 0 }
+      if (inBox.length < Math.max(5, sample.length * 0.05)) return { name: trail.name, officialGrade: trail.officialGrade, score: 0 }
 
       let hits = 0
       for (const p of inBox) {
@@ -65,7 +66,7 @@ export function matchOfficialTrails(trackPoints, officialTrails) {
           }
         }
       }
-      return { name: trail.name, score: hits / sample.length }
+      return { name: trail.name, officialGrade: trail.officialGrade, score: hits / sample.length }
     })
     .sort((a, b) => b.score - a.score)
 }
@@ -74,6 +75,6 @@ export function matchOfficialTrails(trackPoints, officialTrails) {
 export function classifyTrailMatch(scores) {
   const best = scores[0]
   if (!best || best.score < PARTIAL_MATCH_SCORE) return { level: 'none' }
-  if (best.score >= STRONG_MATCH_SCORE) return { level: 'match', name: best.name, score: best.score }
-  return { level: 'partial', name: best.name, score: best.score }
+  if (best.score >= STRONG_MATCH_SCORE) return { level: 'match', name: best.name, officialGrade: best.officialGrade, score: best.score }
+  return { level: 'partial', name: best.name, officialGrade: best.officialGrade, score: best.score }
 }

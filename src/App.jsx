@@ -8,7 +8,7 @@ import DataTable from './components/DataTable.jsx'
 import { parseGpx } from './lib/gpx.js'
 import { buildTrackModel } from './lib/track.js'
 import { usePrefersDark } from './lib/usePrefersDark.js'
-import { classifyTrailGrade, DIRECTIONS } from './lib/grade.js'
+import { classifyTrailGrade, DIRECTIONS, officialGradeFor } from './lib/grade.js'
 import { classifyTrailMatch, matchOfficialTrails, prepareOfficialTrail } from './lib/trailMatch.js'
 
 function formatDistance(m) {
@@ -52,7 +52,7 @@ export default function App() {
             const fileRes = await fetch(`${OFFICIAL_TRAILS_BASE_URL}${encodeURIComponent(f.name)}`)
             const text = await fileRes.text()
             const { name, points } = parseGpx(text)
-            return prepareOfficialTrail(name || f.name, points)
+            return prepareOfficialTrail(name || f.name, points, officialGradeFor(f.name))
           }),
         )
         if (!cancelled) setOfficialTrails(trails)
@@ -252,6 +252,16 @@ export default function App() {
                     )}
                   </div>
                 </div>
+                {trailMatch?.officialGrade && (
+                  <div className="stat-tile">
+                    <div className="stat-label">Official grading</div>
+                    <div className="stat-value">
+                      <span className="grade-pill" style={{ background: trailMatch.officialGrade.color }}>
+                        {trailMatch.officialGrade.label}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
               {gradeResult.grade?.note && <p className="grade-note">{gradeResult.grade.note}</p>}
             </section>
