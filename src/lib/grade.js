@@ -304,6 +304,52 @@ export function classifyTrailGrade(track, direction) {
   return { grade: topGrade, failures, exceedsTopGrade: true, summary }
 }
 
+/**
+ * Finds contiguous sections of the ridden track steeper than the given grade's baseline for
+ * more than minRunM meters — i.e. stretches genuinely too steep for that signed grade, regardless
+ * of how the grade's own short-pitch tier allowances would otherwise excuse a brief steep bit.
+ * Returns [{ startIdx, endIdx, peakIdx, startDistM, endDistM, lengthM, peakDeg }], steepest point
+ * of each run included for marker placement. Used to flag a matched official trail's grade
+ * against what the GPX actually measured, not the auto-classified grade (see classifyTrailGrade).
+ */
+export function findTooSteepRuns(track, grade, direction, minRunM = 5) {
+  if (!grade || !track.hasEle) return []
+  const bands = grade[bandsFor(direction)]
+  if (!bands) return [] // no gradient ceiling for this grade/direction (e.g. downhill Grade 6) — nothing can be "too steep"
+
+  const degs = track.points.map((p) => (p.gradPct === null ? null : Math.abs(degFromGradPct(p.gradPct))))
+  const qualifies = degs.map((d) => d !== null && d > bands.baselineMaxDeg)
+
+  const runs = []
+  let start = null
+  for (let i = 0; i < track.points.length; i++) {
+    if (qualifies[i] && start === null) start = i
+    if (!qualifies[i] && start !== null) {
+      runs.push([start, i - 1])
+      start = null
+    }
+  }
+  if (start !== null) runs.push([start, track.points.length - 1])
+
+  return runs
+    .map(([startIdx, endIdx]) => {
+      let peakIdx = startIdx
+      for (let i = startIdx; i <= endIdx; i++) {
+        if (degs[i] > degs[peakIdx]) peakIdx = i
+      }
+      return {
+        startIdx,
+        endIdx,
+        peakIdx,
+        startDistM: track.points[startIdx].distM,
+        endDistM: track.points[endIdx].distM,
+        lengthM: track.points[endIdx].distM - track.points[startIdx].distM,
+        peakDeg: degs[peakIdx],
+      }
+    })
+    .filter((run) => run.lengthM > minRunM)
+}
+
 // Each grade's baseline degree cutoff for a direction increases monotonically grade-over-grade,
 // so they double as disjoint bucket edges for classifying a single gradient reading.
 function gradientCutoffs(direction) {

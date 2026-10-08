@@ -145,6 +145,7 @@ export function buildTrackModel(filename, name, rawPoints) {
   return {
     filename,
     name: name || filename,
+    centroid,
     points: derived,
     berms,
     hasTime,

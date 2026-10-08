@@ -8,7 +8,7 @@ import DataTable from './components/DataTable.jsx'
 import { parseGpx } from './lib/gpx.js'
 import { buildTrackModel } from './lib/track.js'
 import { usePrefersDark } from './lib/usePrefersDark.js'
-import { classifyTrailGrade, DIRECTIONS, officialGradeFor } from './lib/grade.js'
+import { classifyTrailGrade, DIRECTIONS, findTooSteepRuns, officialGradeFor } from './lib/grade.js'
 import { classifyTrailMatch, matchOfficialTrails, prepareOfficialTrail } from './lib/trailMatch.js'
 
 function formatDistance(m) {
@@ -158,6 +158,16 @@ export default function App() {
     return classifyTrailMatch(matchOfficialTrails(track.points, officialTrails))
   }, [track, officialTrails])
 
+  const matchedOfficialTrail = useMemo(() => {
+    if (!trailMatch || trailMatch.level === 'none') return null
+    return officialTrails.find((t) => t.name === trailMatch.name) ?? null
+  }, [trailMatch, officialTrails])
+
+  const tooSteepRuns = useMemo(() => {
+    if (!track || !matchedOfficialTrail?.officialGrade) return []
+    return findTooSteepRuns(track, matchedOfficialTrail.officialGrade, direction)
+  }, [track, matchedOfficialTrail, direction])
+
   const selectedUploadId = selectedFile?.startsWith('upload:') ? selectedFile.slice('upload:'.length) : null
   const selectedServerFile = selectedUploadId ? null : selectedFile
 
@@ -266,7 +276,7 @@ export default function App() {
               {gradeResult.grade?.note && <p className="grade-note">{gradeResult.grade.note}</p>}
             </section>
 
-            <TrackMap track={track} mode={mode} />
+            <TrackMap track={track} mode={mode} officialTrail={matchedOfficialTrail} tooSteepRuns={tooSteepRuns} />
 
             {track.hasTime ? (
               <ElevationProfile track={track} direction={direction} />
