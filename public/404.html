@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Redirecting…</title>
+    <script>
+      // Single Page Apps for GitHub Pages: https://github.com/rafgraph/spa-github-pages
+      // GitHub Pages has no server-side rewrite, so a direct hit on a client-side route
+      // (e.g. /hammys-return-audit) 404s here. Re-encode the path into a query string and
+      // redirect to the app's root, where index.html's own script decodes it back.
+      var pathSegmentsToKeep = 1 // keep "/mtb-garmin-data-demo"
+      var l = window.location
+      l.replace(
+        l.protocol +
+          '//' +
+          l.hostname +
+          (l.port ? ':' + l.port : '') +
+          l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') +
+          '/?/' +
+          l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash,
+      )
+    </script>
+  </head>
+  <body></body>
+</html>
