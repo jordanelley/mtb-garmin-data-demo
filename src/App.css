@@ -29,6 +29,15 @@
   color: var(--text-primary);
 }
 
+.app-audit-only {
+  min-height: 100vh;
+  background: var(--page);
+  color: var(--text-primary);
+  padding: 24px 32px 64px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
 /* ---------- sidebar ---------- */
 
 .sidebar {
@@ -175,6 +184,29 @@
   margin: 0;
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+.btn-audit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  font-size: 14px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ff9d2e, #fb8c00);
+  color: #1a1a1a;
+  border-radius: 999px;
+  padding: 10px 20px;
+  margin-bottom: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 16px rgba(251, 140, 0, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-audit-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(251, 140, 0, 0.65);
 }
 
 .error-banner {
@@ -530,6 +562,127 @@
 
 .btn-see-more {
   margin-top: 10px;
+}
+
+/* ---------- Hammy's Return audit page ---------- */
+
+.audit-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.audit-page h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.audit-meta {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.audit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.audit-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.audit-card-header {
+  padding: 12px 14px 0;
+}
+
+.audit-card-header h3 {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.audit-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.audit-badge-steep {
+  background: #e53935;
+}
+
+.audit-badge-turn {
+  background: #8e24aa;
+}
+
+.audit-card img {
+  width: 100%;
+  display: block;
+  margin-top: 10px;
+}
+
+.audit-card dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  padding: 12px 14px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.audit-card dt {
+  color: var(--muted);
+}
+
+.audit-card dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+.audit-card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.btn-accept,
+.btn-reject {
+  flex: 1;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 7px 0;
+  cursor: pointer;
+  border: none;
+  color: #fff;
+}
+
+.btn-accept {
+  background: #43a047;
+}
+
+.btn-accept:hover {
+  background: #388e3c;
+}
+
+.btn-reject {
+  background: #e53935;
+}
+
+.btn-reject:hover {
+  background: #c62828;
 }
 
 @media (max-width: 720px) {

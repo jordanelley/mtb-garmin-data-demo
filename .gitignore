@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Raw ride footage (large, local-only — extracted frames used by the app live in public/)
+hammys return vid/

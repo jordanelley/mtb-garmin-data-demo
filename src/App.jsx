@@ -6,6 +6,7 @@ import TrackMap from './components/TrackMap.jsx'
 import ElevationProfile from './components/ElevationProfile.jsx'
 import BermTable from './components/BermTable.jsx'
 import DataTable from './components/DataTable.jsx'
+import HammysReturnAudit from './components/HammysReturnAudit.jsx'
 import { parseGpx } from './lib/gpx.js'
 import { buildTrackModel } from './lib/track.js'
 import { usePrefersDark } from './lib/usePrefersDark.js'
@@ -22,8 +23,35 @@ function formatDistance(m) {
 const GPX_BASE_URL = `${import.meta.env.BASE_URL}gpx-tracks/`
 const OFFICIAL_TRAILS_BASE_URL = `${import.meta.env.BASE_URL}official-trails/`
 
+// Not a real route (no router lib here) — just enough pushState/popstate handling to give this
+// one page its own bookmarkable/shareable URL and working browser back/forward.
+const AUDIT_PATH = `${import.meta.env.BASE_URL}hammys-return-audit`
+const normalizePath = (p) => p.replace(/\/$/, '')
+const isAuditPath = () => normalizePath(window.location.pathname) === normalizePath(AUDIT_PATH)
+
 export default function App() {
   const mode = usePrefersDark() ? 'dark' : 'light'
+  const [showHammysReturnAudit, setShowHammysReturnAudit] = useState(isAuditPath)
+
+  useEffect(() => {
+    const onPopState = () => setShowHammysReturnAudit(isAuditPath())
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  const openHammysReturnAudit = useCallback(() => {
+    window.history.pushState({}, '', AUDIT_PATH)
+    setShowHammysReturnAudit(true)
+  }, [])
+
+  const closeHammysReturnAudit = useCallback(() => {
+    window.history.pushState({}, '', import.meta.env.BASE_URL)
+    setShowHammysReturnAudit(false)
+  }, [])
+
+  useEffect(() => {
+    document.title = showHammysReturnAudit ? "Hammy's Return auto-audit — Audit Tracks" : 'Audit Tracks'
+  }, [showHammysReturnAudit])
 
   const [files, setFiles] = useState([])
   const [listLoading, setListLoading] = useState(false)
@@ -254,6 +282,14 @@ export default function App() {
   const selectedUploadId = selectedFile?.startsWith('upload:') ? selectedFile.slice('upload:'.length) : null
   const selectedServerFile = selectedUploadId ? null : selectedFile
 
+  if (showHammysReturnAudit) {
+    return (
+      <div className="app-audit-only">
+        <HammysReturnAudit mode={mode} onBack={closeHammysReturnAudit} />
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <TrackList
@@ -280,6 +316,9 @@ export default function App() {
 
       <main className="main">
         <header className="app-header">
+          <button className="btn-audit-link" onClick={openHammysReturnAudit}>
+            Check out Hammy&rsquo;s Return auto-audit →
+          </button>
           <h1>Audit Tracks</h1>
           <p>Visualize GPX track points, slope gradient, and estimated berm bank angle.</p>
         </header>
